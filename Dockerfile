@@ -79,9 +79,10 @@ RUN apt-get update && \
     colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release && \
     rm -rf /var/lib/apt/lists/*
 
-RUN pip3 install --force-reinstall "numpy<2.0"
 RUN pip3 install "rowan"
 RUN pip3 install "nicegui==1.4.22"
+RUN pip3 uninstall -y numpy
+RUN pip install "numpy<2.0"
 
 # 4. Automate sourcing for 'docker exec'
 RUN echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc && \
