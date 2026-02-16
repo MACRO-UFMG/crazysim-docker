@@ -1,0 +1,14 @@
+services:  
+  crazysim:
+    build:
+      context: ./
+      target: crazysim
+    container_name: crazysim
+    environment:
+      - DISPLAY=${DISPLAY}
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    # tty: true            # Keeps the container running
+    # stdin_open: true     # Allows you to interact with the shell
+    network_mode: "host"
+    ipc: "host"
