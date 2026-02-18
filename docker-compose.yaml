@@ -6,8 +6,11 @@ services:
     container_name: crazysim
     environment:
       - DISPLAY=${DISPLAY}
+      - ROS_DOMAIN_ID=42
+      - RMW_IMPLEMENTATION=rmw_fastrtps_cpp
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix
+      - ./visibility-guard:/CrazySim/crazyswarm2_ws/src/visibility-guard
     # tty: true            # Keeps the container running
     # stdin_open: true     # Allows you to interact with the shell
     network_mode: "host"

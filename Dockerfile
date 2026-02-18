@@ -63,6 +63,9 @@ RUN apt-get update && apt-get install -y \
     ros-humble-tf-transformations \
     ros-humble-tf2-ros \
     ros-humble-tf2-geometry-msgs \
+    ros-humble-nav2-map-server \
+    ros-humble-nav2-lifecycle-manager \
+    ros-humble-rviz2 \
     && rm -rf /var/lib/apt/lists/*
 
 # 2. Initialize rosdep
@@ -79,10 +82,24 @@ RUN apt-get update && \
     colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release && \
     rm -rf /var/lib/apt/lists/*
 
-RUN pip3 install "rowan"
-RUN pip3 install "nicegui==1.4.22"
-RUN pip3 uninstall -y numpy
-RUN pip install "numpy<2.0"
+COPY crazyflies.yaml ./src/crazyswarm2/crazyflie/config/crazyflies.yaml
+
+RUN pip3 install "rowan" && \
+    pip3 install "nicegui==1.4.22" && \
+    pip3 install gurobipy && \
+    pip3 install "opencv-python==4.10.0.84" && \
+    pip3 install shapely && \
+    pip3 uninstall -y numpy && \
+    pip3 install "numpy<2.0.0"
+
+WORKDIR /CrazySim/crazyswarm2_ws/src
+
+COPY visibility-guard ./visibility-guard
+
+WORKDIR /CrazySim/crazyswarm2_ws
+
+RUN . /opt/ros/humble/setup.sh && \
+    colcon build --symlink-install --packages-select visibility_guard
 
 # 4. Automate sourcing for 'docker exec'
 RUN echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc && \
