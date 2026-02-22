@@ -30,7 +30,9 @@ RUN apt-get update && apt-get install -y gz-garden && rm -rf /var/lib/apt/lists/
 
 # Clone CrazySim
 RUN git clone https://github.com/gtfactslab/CrazySim.git --recursive
+
 WORKDIR /CrazySim
+
 RUN apt remove -y python3-packaging python3-numpy
 
 RUN cd crazyflie-lib-python && \
@@ -39,6 +41,8 @@ RUN cd crazyflie-lib-python && \
 RUN mkdir -p crazyflie-firmware/sitl_make/build && \
     cd crazyflie-firmware/sitl_make/build && \
     cmake .. && make all
+
+COPY agents.txt ./crazyflie-firmware/tools/crazyflie-simulation/simulator_files/gazebo/launch/drone_spawn_list/agents.txt
 
 WORKDIR /
 # Install cfclient
@@ -56,6 +60,8 @@ RUN apt-get update && apt-get install -y \
     ros-humble-ros2topic \
     ros-humble-ros2launch \
     ros-humble-ros2service \
+    ros-humble-ros2run \
+    ros-humble-teleop-twist-keyboard \
     ros-humble-ament-cmake \
     ros-humble-builtin-interfaces \
     ros-humble-rosidl-default-generators \
@@ -106,4 +112,4 @@ RUN echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc && \
     echo "if [ -f /CrazySim/crazyswarm2_ws/install/setup.bash ]; then source /CrazySim/crazyswarm2_ws/install/setup.bash; fi" >> ~/.bashrc
 
 WORKDIR /CrazySim/crazyflie-firmware
-CMD ["bash", "tools/crazyflie-simulation/simulator_files/gazebo/launch/sitl_multiagent_square.sh", "-n", "4", "-m", "crazyflie"]
+CMD ["bash", "tools/crazyflie-simulation/simulator_files/gazebo/launch/sitl_multiagent_text.sh", "-f", "agents.txt", "-m", "crazyflie"]
