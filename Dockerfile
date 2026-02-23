@@ -42,7 +42,8 @@ RUN mkdir -p crazyflie-firmware/sitl_make/build && \
     cd crazyflie-firmware/sitl_make/build && \
     cmake .. && make all
 
-COPY agents.txt ./crazyflie-firmware/tools/crazyflie-simulation/simulator_files/gazebo/launch/drone_spawn_list/agents.txt
+COPY 10_agents.txt ./crazyflie-firmware/tools/crazyflie-simulation/simulator_files/gazebo/launch/drone_spawn_list/10_agents.txt
+COPY my_lab_agents.txt ./crazyflie-firmware/tools/crazyflie-simulation/simulator_files/gazebo/launch/drone_spawn_list/my_lab_agents.txt
 
 WORKDIR /
 # Install cfclient
@@ -112,4 +113,7 @@ RUN echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc && \
     echo "if [ -f /CrazySim/crazyswarm2_ws/install/setup.bash ]; then source /CrazySim/crazyswarm2_ws/install/setup.bash; fi" >> ~/.bashrc
 
 WORKDIR /CrazySim/crazyflie-firmware
-CMD ["bash", "tools/crazyflie-simulation/simulator_files/gazebo/launch/sitl_multiagent_text.sh", "-f", "agents.txt", "-m", "crazyflie"]
+
+# CMD ["bash", "tools/crazyflie-simulation/simulator_files/gazebo/launch/sitl_multiagent_text.sh", "-f", "10_agents.txt", "-m", "crazyflie"]
+
+CMD ["bash", "tools/crazyflie-simulation/simulator_files/gazebo/launch/sitl_multiagent_text.sh", "-f", "my_lab_agents.txt", "-m", "crazyflie"]
