@@ -26,6 +26,42 @@ robots:
     initial_position: [1.0, 1.0, 0.0]
     type: cf_sim
 
+  # cf_4:
+  #     enabled: true
+  #     uri: udp://0.0.0.0:19854
+  #     initial_position: [0.0, 0.0, 0.0]
+  #     type: cf_sim
+
+  # cf_5:
+  #   enabled: true
+  #   uri: udp://0.0.0.0:19855
+  #   initial_position: [1.0, 0.0, 0.0]
+  #   type: cf_sim
+
+  # cf_6:
+  #   enabled: true
+  #   uri: udp://0.0.0.0:19856
+  #   initial_position: [0.0, 1.0, 0.0]
+  #   type: cf_sim 
+
+  # cf_7:
+  #   enabled: true
+  #   uri: udp://0.0.0.0:19857
+  #   initial_position: [1.0, 1.0, 0.0]
+  #   type: cf_sim
+
+  # cf_8:
+  #     enabled: true
+  #     uri: udp://0.0.0.0:19858
+  #     initial_position: [2.0, 0.0, 0.0]
+  #     type: cf_sim
+
+  # cf_9:
+  #   enabled: true
+  #   uri: udp://0.0.0.0:19859
+  #   initial_position: [2.0, 1.0, 0.0]
+  #   type: cf_sim
+
 robot_types:
   cf_sim:
     motion_capture:
