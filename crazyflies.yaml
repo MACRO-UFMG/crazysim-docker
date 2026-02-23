@@ -20,11 +20,11 @@ robots:
     initial_position: [0.0, 1.0, 0.0]
     type: cf_sim 
 
-  cf_3:
-    enabled: true
-    uri: udp://0.0.0.0:19853
-    initial_position: [1.0, 1.0, 0.0]
-    type: cf_sim
+  # cf_3:
+  #   enabled: true
+  #   uri: udp://0.0.0.0:19853
+  #   initial_position: [1.0, 1.0, 0.0]
+  #   type: cf_sim
 
   # cf_4:
   #     enabled: true
