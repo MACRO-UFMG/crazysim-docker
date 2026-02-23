@@ -42,9 +42,6 @@ RUN mkdir -p crazyflie-firmware/sitl_make/build && \
     cd crazyflie-firmware/sitl_make/build && \
     cmake .. && make all
 
-COPY 10_agents.txt ./crazyflie-firmware/tools/crazyflie-simulation/simulator_files/gazebo/launch/drone_spawn_list/10_agents.txt
-COPY my_lab_agents.txt ./crazyflie-firmware/tools/crazyflie-simulation/simulator_files/gazebo/launch/drone_spawn_list/my_lab_agents.txt
-
 WORKDIR /
 # Install cfclient
 RUN git clone https://github.com/llanesc/crazyflie-clients-python && \
@@ -89,8 +86,6 @@ RUN apt-get update && \
     colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release && \
     rm -rf /var/lib/apt/lists/*
 
-COPY crazyflies.yaml ./src/crazyswarm2/crazyflie/config/crazyflies.yaml
-
 RUN pip3 install "rowan" && \
     pip3 install "nicegui==1.4.22" && \
     pip3 install gurobipy && \
@@ -111,6 +106,19 @@ RUN . /opt/ros/humble/setup.sh && \
 # 4. Automate sourcing for 'docker exec'
 RUN echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc && \
     echo "if [ -f /CrazySim/crazyswarm2_ws/install/setup.bash ]; then source /CrazySim/crazyswarm2_ws/install/setup.bash; fi" >> ~/.bashrc
+
+
+
+WORKDIR /CrazySim
+
+COPY 10_agents.txt ./crazyflie-firmware/tools/crazyflie-simulation/simulator_files/gazebo/launch/drone_spawn_list/10_agents.txt
+COPY my_lab_agents.txt ./crazyflie-firmware/tools/crazyflie-simulation/simulator_files/gazebo/launch/drone_spawn_list/my_lab_agents.txt
+
+WORKDIR /CrazySim/crazyswarm2_ws
+COPY crazyflies.yaml ./src/crazyswarm2/crazyflie/config/crazyflies.yaml
+
+
+
 
 WORKDIR /CrazySim/crazyflie-firmware
 
