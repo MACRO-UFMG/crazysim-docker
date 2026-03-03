@@ -29,7 +29,10 @@ RUN curl https://packages.osrfoundation.org/gazebo.gpg --output /usr/share/keyri
 RUN apt-get update && apt-get install -y gz-garden && rm -rf /var/lib/apt/lists/*
 
 # Clone CrazySim
-RUN git clone https://github.com/gtfactslab/CrazySim.git --recursive
+RUN git clone https://github.com/gtfactslab/CrazySim.git && \
+    cd CrazySim && \
+    git checkout 7dbacd9d8280379c65ffb71180e4f134d201a202 && \
+    git submodule update --init --recursive
 
 WORKDIR /CrazySim
 
@@ -122,6 +125,6 @@ COPY crazyflies.yaml ./src/crazyswarm2/crazyflie/config/crazyflies.yaml
 
 WORKDIR /CrazySim/crazyflie-firmware
 
-# CMD ["bash", "tools/crazyflie-simulation/simulator_files/gazebo/launch/sitl_multiagent_text.sh", "-f", "10_agents.txt", "-m", "crazyflie"]
+CMD ["bash", "tools/crazyflie-simulation/simulator_files/gazebo/launch/sitl_multiagent_text.sh", "-f", "10_agents.txt", "-m", "crazyflie"]
 
-CMD ["bash", "tools/crazyflie-simulation/simulator_files/gazebo/launch/sitl_multiagent_text.sh", "-f", "my_lab_agents.txt", "-m", "crazyflie"]
+# CMD ["bash", "tools/crazyflie-simulation/simulator_files/gazebo/launch/sitl_multiagent_text.sh", "-f", "my_lab_agents.txt", "-m", "crazyflie"]
