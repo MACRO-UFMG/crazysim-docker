@@ -15,11 +15,3 @@ services:
     # stdin_open: true     # Allows you to interact with the shell
     network_mode: "host"
     ipc: "host"
-    # --- GPU CONFIGURATION START ---
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
