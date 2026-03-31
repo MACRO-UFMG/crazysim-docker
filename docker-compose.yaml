@@ -10,8 +10,9 @@ services:
       - RMW_IMPLEMENTATION=rmw_fastrtps_cpp
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix
-      - ./visibility-guard:/CrazySim/crazyswarm2_ws/src/visibility-guard
-    # tty: true            # Keeps the container running
-    # stdin_open: true     # Allows you to interact with the shell
+      - ./crazyflies.yaml:/CrazySim/crazyswarm2_ws/src/crazyswarm2/crazyflie/config/crazyflies.yaml
+      - ./agents.txt:/CrazySim/crazyflie-firmware/tools/crazyflie-simulation/simulator_files/gazebo/launch/drone_spawn_list/agents.txt
+    tty: true            # Keeps the container running
+    stdin_open: true     # Allows you to interact with the shell
     network_mode: "host"
     ipc: "host"

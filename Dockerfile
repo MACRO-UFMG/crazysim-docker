@@ -19,7 +19,11 @@ RUN apt-get update && apt-get install -y \
     libqt5x11extras5 libxcb-xinerama0 libxcb-cursor0 python3-pip && \
     rm -rf /var/lib/apt/lists/*
 
-RUN pip3 install --upgrade pip && pip3 install Jinja2
+RUN pip3 install --upgrade pip && \
+    pip3 install Jinja2 && \
+    pip3 install rowan && \
+    pip3 install "nicegui==1.4.22" && \
+    pip3 install transforms3d
 RUN ln -sf /usr/bin/python3 /usr/bin/python
 
 # Install Gazebo
@@ -62,10 +66,7 @@ RUN apt-get update && \
     colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release && \
     rm -rf /var/lib/apt/lists/*
 
-RUN pip3 install "rowan" && \
-    pip3 install "nicegui==1.4.22" && \
-    pip3 uninstall -y numpy && \
-    pip3 install "numpy<2.0.0"
+RUN pip3 install "numpy<2.0.0" --force-reinstall
 
 WORKDIR /CrazySim/crazyswarm2_ws
 
@@ -73,13 +74,6 @@ WORKDIR /CrazySim/crazyswarm2_ws
 RUN echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc && \
     echo "if [ -f /CrazySim/crazyswarm2_ws/install/setup.bash ]; then source /CrazySim/crazyswarm2_ws/install/setup.bash; fi" >> ~/.bashrc
 
-WORKDIR /CrazySim
-
-COPY agents.txt ./crazyflie-firmware/tools/crazyflie-simulation/simulator_files/gazebo/launch/drone_spawn_list/agents.txt
-
-WORKDIR /CrazySim/crazyswarm2_ws
-COPY crazyflies.yaml ./src/crazyswarm2/crazyflie/config/crazyflies.yaml
-
 WORKDIR /CrazySim/crazyflie-firmware
 
-CMD ["bash", "tools/crazyflie-simulation/simulator_files/gazebo/launch/sitl_multiagent_text.sh", "-f", "my_lab_agents.txt", "-m", "crazyflie"]
+CMD ["tail", "-f", "/dev/null"]
