@@ -36,8 +36,6 @@ RUN git clone https://github.com/gtfactslab/CrazySim.git && \
 
 WORKDIR /CrazySim
 
-RUN apt remove -y python3-packaging python3-numpy
-
 RUN cd crazyflie-lib-python && \
     SETUPTOOLS_SCM_PRETEND_VERSION=0.1.31 pip install -e .
 
@@ -50,36 +48,11 @@ WORKDIR /
 RUN git clone https://github.com/llanesc/crazyflie-clients-python && \
     cd crazyflie-clients-python && pip3 install -e .
 
-# --- ROS FIXES START HERE ---
-SHELL ["/bin/bash", "-c"]
-
-# 1. Install missing CLI tools and rosdep
-RUN apt-get update && apt-get install -y \
-    python3-colcon-common-extensions \
-    python3-rosdep \
-    ros-humble-ros2cli \
-    ros-humble-ros2topic \
-    ros-humble-ros2launch \
-    ros-humble-ros2service \
-    ros-humble-ros2run \
-    ros-humble-teleop-twist-keyboard \
-    ros-humble-ament-cmake \
-    ros-humble-builtin-interfaces \
-    ros-humble-rosidl-default-generators \
-    ros-humble-joy \
-    ros-humble-tf-transformations \
-    ros-humble-tf2-ros \
-    ros-humble-tf2-geometry-msgs \
-    ros-humble-nav2-map-server \
-    ros-humble-nav2-lifecycle-manager \
-    ros-humble-rviz2 \
-    && rm -rf /var/lib/apt/lists/*
-
-# 2. Initialize rosdep
-RUN rosdep init || true && rosdep update
-
 WORKDIR /CrazySim/crazyswarm2_ws/src
 RUN git clone --recursive https://github.com/IMRCLab/motion_capture_tracking.git
+
+# --- ROS FIXES START HERE ---
+SHELL ["/bin/bash", "-c"]
 
 WORKDIR /CrazySim/crazyswarm2_ws
 # 3. Ensure apt-get update runs in the same layer as rosdep install
@@ -91,40 +64,22 @@ RUN apt-get update && \
 
 RUN pip3 install "rowan" && \
     pip3 install "nicegui==1.4.22" && \
-    pip3 install gurobipy && \
-    pip3 install "opencv-python==4.10.0.84" && \
-    pip3 install shapely && \
     pip3 uninstall -y numpy && \
     pip3 install "numpy<2.0.0"
 
-WORKDIR /CrazySim/crazyswarm2_ws/src
-
-COPY visibility-guard ./visibility-guard
-
 WORKDIR /CrazySim/crazyswarm2_ws
-
-RUN . /opt/ros/humble/setup.sh && \
-    colcon build --symlink-install --packages-select visibility_guard
 
 # 4. Automate sourcing for 'docker exec'
 RUN echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc && \
     echo "if [ -f /CrazySim/crazyswarm2_ws/install/setup.bash ]; then source /CrazySim/crazyswarm2_ws/install/setup.bash; fi" >> ~/.bashrc
 
-
-
 WORKDIR /CrazySim
 
-COPY 10_agents.txt ./crazyflie-firmware/tools/crazyflie-simulation/simulator_files/gazebo/launch/drone_spawn_list/10_agents.txt
-COPY my_lab_agents.txt ./crazyflie-firmware/tools/crazyflie-simulation/simulator_files/gazebo/launch/drone_spawn_list/my_lab_agents.txt
+COPY agents.txt ./crazyflie-firmware/tools/crazyflie-simulation/simulator_files/gazebo/launch/drone_spawn_list/agents.txt
 
 WORKDIR /CrazySim/crazyswarm2_ws
 COPY crazyflies.yaml ./src/crazyswarm2/crazyflie/config/crazyflies.yaml
 
-
-
-
 WORKDIR /CrazySim/crazyflie-firmware
 
-CMD ["bash", "tools/crazyflie-simulation/simulator_files/gazebo/launch/sitl_multiagent_text.sh", "-f", "10_agents.txt", "-m", "crazyflie"]
-
-# CMD ["bash", "tools/crazyflie-simulation/simulator_files/gazebo/launch/sitl_multiagent_text.sh", "-f", "my_lab_agents.txt", "-m", "crazyflie"]
+CMD ["bash", "tools/crazyflie-simulation/simulator_files/gazebo/launch/sitl_multiagent_text.sh", "-f", "my_lab_agents.txt", "-m", "crazyflie"]
