@@ -4,8 +4,23 @@ ENV DEBIAN_FRONTEND noninteractive
 
 # Install essential CLI tools and networking utilities for debugging
 RUN apt-get update && apt-get install -y \
-    git x11vnc wget unzip xvfb icewm tree dos2unix vim \
-    net-tools iputils-ping iproute2 iptables tcpdump nano tmux && \
+    git \
+    x11vnc \
+    wget \
+    unzip \
+    xvfb \
+    icewm \
+    tree \
+    dos2unix \
+    vim \
+    net-tools \
+    iputils-ping \
+    iproute2 \
+    iptables \
+    tcpdump \
+    nano \
+    gcc-arm-none-eabi \
+    tmux && \
     rm -rf /var/lib/apt/lists/*
 
 # Docker image for crazysim
@@ -89,7 +104,7 @@ WORKDIR /CrazySim/crazyswarm2_ws
 RUN echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc && \
     echo "if [ -f /CrazySim/crazyswarm2_ws/install/setup.bash ]; then source /CrazySim/crazyswarm2_ws/install/setup.bash; fi" >> ~/.bashrc
 
-WORKDIR /CrazySim/crazyflie-firmware
+WORKDIR /CrazySim
 
 # Keep container alive
 CMD ["tail", "-f", "/dev/null"]
