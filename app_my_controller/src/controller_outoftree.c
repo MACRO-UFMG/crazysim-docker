@@ -8,7 +8,7 @@
 #define DEBUG_MODULE "COOT"
 #include "debug.h"
 
-
+#define CF_MASS 0.027f
 
 // Global state variable used in the
 // firmware as the only instance and in bindings
