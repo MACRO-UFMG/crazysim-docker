@@ -48,6 +48,21 @@ ros2 service call /all/emergency_stop std_srvs/srv/Empty "{}"
 
 ---
 
+## 💻 Custom Firmware Development
+
+### Building for SITL (Software-In-The-Loop)
+If you are developing the custom Out-Of-Tree (OOT) controller or modifying the core Crazyflie firmware, you must recompile the native Linux executable used by the simulator. 
+
+Run the following command to build the firmware for the SITL environment. The `EXTRA_CFLAGS="-Wno-error"` flag is necessary to bypass strict 64-bit compiler warnings when building inside the Docker container:
+
+```bash
+cd /CrazySim/app_my_controller
+make PLATFORM=sitl EXTRA_CFLAGS="-Wno-error" -j 12
+
+```
+
+---
+
 ## 🛠 Troubleshooting & Maintenance
 
 ### 🐍 Python Environment Fix
