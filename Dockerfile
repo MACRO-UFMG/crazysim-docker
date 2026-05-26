@@ -13,6 +13,8 @@ RUN apt-get update && apt-get install -y \
     tree \
     dos2unix \
     vim \
+    less \ 
+    file \
     net-tools \
     iputils-ping \
     iproute2 \
@@ -20,6 +22,13 @@ RUN apt-get update && apt-get install -y \
     tcpdump \
     nano \
     gcc-arm-none-eabi \
+    mesa-utils \
+    libglvnd0 \
+    libgl1 \
+    libglx0 \
+    libegl1 \
+    libxext6 \
+    libx11-6 \
     tmux && \
     rm -rf /var/lib/apt/lists/*
 
