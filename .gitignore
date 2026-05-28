@@ -1,3 +1,4 @@
 /app_my_controller/*.o*
 /app_my_controller/build
 /app_my_controller/src/*.o*
+/controller_pkg/controller_pkg/__pycache__*

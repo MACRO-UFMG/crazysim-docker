@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>controller_pkg</name>
+  <version>0.1.0</version>
+  <description>ROS 2 node that streams a full-state command to a Crazyflie through Crazyswarm2.</description>
+  <maintainer email="arthurhdn7@hotmail.com">Arthur Nunes</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>ament_python</buildtool_depend>
+
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>crazyflie_py</exec_depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

@@ -1,0 +1,1 @@
+"""controller_pkg is a ROS 2 package that provides a node to stream a full-state command to a Crazyflie through Crazyswarm2. It is designed to be used within the CrazySim simulation environment, allowing users to test and develop control strategies for their Crazyflie drones in a simulated setting before deploying them on real hardware."""
