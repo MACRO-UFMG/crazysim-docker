@@ -15,6 +15,7 @@ services:
       - ./crazyflies.yaml:/CrazySim/crazyswarm2_ws/src/crazyswarm2/crazyflie/config/crazyflies.yaml
       - ./agents.txt:/CrazySim/crazyflie-firmware/tools/crazyflie-simulation/simulator_files/gazebo/launch/drone_spawn_list/agents.txt
       - ./app_my_controller:/CrazySim/app_my_controller
+      - ./sitl_make_overrides/CMakeLists.txt:/CrazySim/crazyflie-firmware/sitl_make/CMakeLists.txt
       - ${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY:-}:${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY:-}
     tty: true            # Keeps the container running
     stdin_open: true     # Allows you to interact with the shell
