@@ -1,0 +1,108 @@
+FUNCTION Compute_Control_Inputs(state, target_path, obstacles)
+
+  // -- SENSOR READINGS --
+  p = state.position       // pure quaternion
+  v = state.velocity       // pure quaternion
+  o = state.attitude       // unit quaternion
+  w = state.angular_vel    // pure quaternion
+  uT_prev = state.thrust   // real
+  uT_dot_prev = state.thrust_rate // real
+
+  // -- 1. GUIDANCE: ARTIFICIAL VECTOR FIELD (AVF) --
+  // Find closest point on path and distance
+  c_star, s_star = Find_Closest_Point_On_Path(p, target_path)
+  D_C = p - c_star 
+  T_C = Compute_Tangent(target_path, s_star)
+
+  // Calculate AVF components
+  G_gain = (2/PI) * atan(k_G * norm(D_C)) 
+  H_gain = sqrt(1 - G_gain^2) * sign_direction 
+  
+  Phi_S = -G_gain * (D_C / norm(D_C)) + H_gain * (T_C / norm(T_C))
+  Phi_T = -Null_Space_Projector(T_C) * d(D_C)/dt 
+  eta = -dot(Phi_S, Phi_T) + sqrt(dot(Phi_S, Phi_T)^2 + v_r^2 - norm(Phi_T)^2) 
+  
+  // Desired velocity field
+  Phi = eta * Phi_S + Phi_T 
+  Phi_dot = Compute_Derivative(Phi) 
+
+  // -- 2. BACKSTEPPING: PATH-FOLLOWING --
+  // Step 2: Velocity error and Virtual Acceleration
+  z_v = v - Phi 
+  a_Phi = g*k_hat - k_p*D_C - k_v*z_v + Phi_dot 
+  a_Phi_dot = Compute_Derivative(a_Phi)
+  
+  // Step 3: Acceleration error and Virtual Angular Velocity / Thrust Rate
+  k_B = o * k_hat * conjugate(o) 
+  z_o = (uT_prev / m) * k_B - a_Phi
+  
+  Phi_L = a_Phi_dot - k_o*z_o - k_pv*z_v 
+  w_yaw = Compute_Yaw_Command() // Free parameter 
+  phi = cross(k_hat, conjugate(o) * (Phi_L * m / uT_prev) * o) + k_hat * w_yaw
+  phi_dot = Compute_Derivative(phi)
+  
+  T_1 = m * dot(Phi_L, k_B) 
+  T_1_dot = Compute_Derivative(T_1)
+
+  // Step 4: Angular Velocity error and Nominal Control Laws
+  z_w = w - phi 
+  z_T = uT_dot_prev - T_1 
+  
+  // Nominal path-following inputs
+  tau_Phi = cross(w, J*w) + J*phi_dot - k_w*z_w - k_pvo*(uT_prev/m)*cross(k_hat, conjugate(o)*z_o*o) 
+  T2_Phi = T_1_dot - k_T*z_T - dot(z_o, k_B)*(k_pvo / m) 
+
+  // -- 3. HOCBF: COLLISION AVOIDANCE --
+  // Calculate barrier functions and their derivatives
+  B_h_lambda = Compute_Smooth_Distance(p, obstacles, h) - (lambda^2)/2 [cite: 263]
+  
+  // Evaluate HOCBF at nominal inputs
+  F_val = Evaluate_HOCBF_psi4(p, v, o, w, tau_Phi, uT_prev, uT_dot_prev, T2_Phi) [cite: 275]
+  
+  IF F_val >= 0 THEN
+      // Safe, use nominal path-following inputs [cite: 292]
+      u_tau = tau_Phi [cite: 308]
+      u_T_dotdot = T2_Phi [cite: 308]
+  ELSE
+      // Compute additive terms for safety modification [cite: 293]
+      A_T = (1/m) * dot(Gradient(B_h_lambda, p), k_B) [cite: 305]
+      A_tau = (uT_prev / m) * inv(J) * cross(k_hat, conjugate(o)*Gradient(B_h_lambda, p)*o) [cite: 305]
+      
+      denom = A_T^2 + norm(A_tau)^2 [cite: 304]
+      tau_Psi = (-F_val / denom) * A_tau [cite: 304]
+      T2_Psi = (-F_val / denom) * A_T [cite: 304]
+      
+      // Check circulation constraint
+      E_val = Evaluate_Circulation_HOCBF(p, v, o, w, tau_Phi, uT_prev, uT_dot_prev, T2_Phi) [cite: 343]
+      B_T = (1/m) * dot(M_matrix * Gradient(B_h_lambda, p), k_B) [cite: 344]
+      B_tau = (uT_prev/m)*inv(J)*cross(k_hat, conjugate(o)*M_matrix*Gradient(B_h_lambda, p)*o) [cite: 344]
+      E_Psi = T2_Psi * B_T + dot(tau_Psi, B_tau) [cite: 343]
+      
+      IF (E_val + E_Psi) >= 0 THEN
+          u_tau = tau_Phi + tau_Psi [cite: 308]
+          u_T_dotdot = T2_Phi + T2_Psi [cite: 308]
+      ELSE
+          // Modify again for circulation [cite: 348]
+          g11 = A_T^2 + norm(A_tau)^2 [cite: 277]
+          g22 = B_T^2 + norm(B_tau)^2 [cite: 279]
+          g12 = A_T*B_T + dot(A_tau, B_tau) [cite: 281]
+          
+          a_term = (-F_val*g22 + E_val*g12) / (g11*g22 - g12^2) [cite: 283]
+          b_term = (-E_val*g11 + F_val*g12) / (g11*g22 - g12^2) [cite: 286]
+          
+          T2_Theta = a_term*A_T + b_term*B_T [cite: 289]
+          tau_Theta = a_term*A_tau + b_term*B_tau [cite: 290]
+          
+          u_tau = tau_Phi + tau_Theta [cite: 308]
+          u_T_dotdot = T2_Phi + T2_Theta [cite: 308]
+      END IF
+  END IF
+
+  // -- INTEGRATION & OUTPUT --
+  // Integrate thrust double derivative to get target thrust command
+  uT_dot_new = uT_dot_prev + u_T_dotdot * dt
+  uT_new = uT_prev + uT_dot_new * dt
+
+  RETURN uT_new, u_tau
+
+END FUNCTION

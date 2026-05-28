@@ -26,15 +26,15 @@ static struct mat33 CRAZYFLIE_INERTIA =
       {0.83e-6f, 16.6e-6f, 1.8e-6f},
       {0.72e-6f, 1.8e-6f, 29.3e-6f}}};
 
-static float k_G = 1.0f;
-static float v_r = 1.0f;
-static float k_p = 1.5f;
-static float k_v = 1.2f;
-static float k_o = 1.0f;
+static float k_G = 7.29f;
+static float v_r = 2.0f;
+static float k_p = 0.86f;
+static float k_v = 4.33f;
+static float k_o = 18.68f;
 static float k_pv = 1.0f;
-static float k_w = 2.0f;
-static float k_pvo = 1.0f;
-static float k_T = 2.0f;
+static float k_w = 70.60f;
+static float k_pvo = 0.64f;
+static float k_T = 19.29f;
 static float omega_yaw = 0.0f;
 static float sign_direction = 1.0f;
 
@@ -170,11 +170,12 @@ void controllerPseudo(
     vscl(-k_v, z_v),
     Phi_dot
   );
+  const struct vec k_B = qvrot2(k_hat, o);
+  const float T0 = CF_MASS * vdot(a_Phi, k_B);
   const struct vec a_Phi_dot = vscl(1.0f/dt, vsub(a_Phi, self->prev_a_Phi));
   self->prev_a_Phi = a_Phi;
 
   // Step 3
-  const struct vec k_B = qvrot2(k_hat, o);
   const float uT_safe = clamp_positive(self->uT, 0.05f);
   const float uT_dot_prev = self->uT_dot;
 
@@ -216,8 +217,9 @@ void controllerPseudo(
   const float T2_Phi = T1_dot - k_T*z_T - (k_pvo/CF_MASS)*vdot(z_o, k_B);
 
   // Integration & output
-  self->uT_dot = uT_dot_prev + T2_Phi*dt;
-  self->uT = clamp_positive(self->uT + self->uT_dot*dt, 0.0f);
+  self->uT_dot = self->uT_dot + T2_Phi*dt;
+  // self->uT = clamp_positive(self->uT + self->uT_dot*dt, 0.0f);
+  self->uT = T0;
 
   if (setpoint->mode.z == modeDisable) {
     control->thrustSi = 0.0f;
