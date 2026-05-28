@@ -8,12 +8,16 @@ services:
       - DISPLAY=${DISPLAY}
       - ROS_DOMAIN_ID=42
       - RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+      - WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-}
+      - XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR}
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix
       - ./crazyflies.yaml:/CrazySim/crazyswarm2_ws/src/crazyswarm2/crazyflie/config/crazyflies.yaml
       - ./agents.txt:/CrazySim/crazyflie-firmware/tools/crazyflie-simulation/simulator_files/gazebo/launch/drone_spawn_list/agents.txt
       - ./app_my_controller:/CrazySim/app_my_controller
+      - ${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY:-}:${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY:-}
     tty: true            # Keeps the container running
     stdin_open: true     # Allows you to interact with the shell
-    network_mode: "host"
-    ipc: "host"
+    network_mode: host
+    ipc: host
+    pid: host
