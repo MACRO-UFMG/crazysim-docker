@@ -84,16 +84,20 @@ all:
         frequency: 10 # Hz
       status:
         frequency: 1 # Hz
-    #custom_topics:
-    #  topic_name1:
-    #    frequency: 10 # Hz
-    #    vars: ["stateEstimateZ.x", "stateEstimateZ.y", "stateEstimateZ.z", "pm.vbat"]
-    #  topic_name2:
-    #    frequency: 1 # Hz
-    #    vars: ["stabilizer.roll", "stabilizer.pitch", "stabilizer.yaw"]
+    custom_topics:
+      debug_ctrl_thrust_terms:
+        frequency: 10 # Hz
+        vars: ["ctrlPseudo.uT", "ctrlPseudo.T0", "ctrlPseudo.T1", "ctrlPseudo.T2"]
+      # debug_ctrl_thrust_rate:
+      #   frequency: 10 # Hz
+      #   vars: ["ctrlPseudo.uT_dot", "ctrlPseudo.T2", "ctrlPseudo.zT"]
+      # debug_ctrl_norms:
+      #   frequency: 10 # Hz
+      #   vars: ["ctrlPseudo.zv_norm", "ctrlPseudo.zo_norm", "ctrlPseudo.zw_norm", "ctrlPseudo.phi_norm", "ctrlPseudo.phi_dot_norm"]
   # firmware parameters for all drones (use robot_types/type_name to set per type, or
   # robots/drone_name to set per drone)
   firmware_params:
+    query_all_values_on_connect: true
     commander:
       enHighLevel: 1
     stabilizer:
