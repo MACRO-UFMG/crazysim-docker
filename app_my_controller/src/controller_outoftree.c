@@ -35,18 +35,18 @@ static struct mat33 CRAZYFLIE_INERTIA =
 static float k_G = 2.0f;
 static float v_r = 0.5f;
 static float k_p = 0.5f;
-static float k_v = 12.0f;
+static float k_v = 9.0f;
 
-static float k_o = 10.68f;
-static float k_pv = 0.0f;
+static float k_o = 10.00f;
+static float k_pv = 0.005f;
 
 static float k_w = 60.00f;
-static float k_pvo = 0.0f;
+static float k_pvo = 3e-6f;
 
-static float k_T = 19.29f;
+static float k_T = 20.00f;
 static float omega_yaw = 0.0f;
 static float sign_direction = 1.0f;
-static float deriv_alpha = 0.25f;
+static float deriv_alpha = 0.01f;
 static uint8_t use_integrated_thrust = 0; // 0: no integration, 1: integrate T1, 2: integrate T2
 
 static float dbg_uT = 0.0f;
@@ -95,18 +95,8 @@ static inline float clamp_positive(float x, float floor) {
   return x;
 }
 
-static inline float clampf_local(float x, float min_val, float max_val) {
-  if (x < min_val) {
-    return min_val;
-  }
-  if (x > max_val) {
-    return max_val;
-  }
-  return x;
-}
-
 static inline struct vec lpf_vec(struct vec prev, struct vec in, float alpha) {
-  const float a = clampf_local(alpha, 0.0f, 1.0f);
+  const float a = constrain(alpha, 0.0f, 1.0f);
   return vadd(vscl(1.0f - a, prev), vscl(a, in));
 }
 
@@ -152,6 +142,9 @@ void controllerPseudo(
   static float omega_yaw_max = 10;
   static float heuristic_rp = 12;
   static float heuristic_yaw = 5;
+  static float coll_max = 18;
+
+  const struct vec K_HAT = mkvec(0.0f, 0.0f, 1.0f);
 
 
   const float dt = (float)(1.0f/UPDATE_RATE);
@@ -228,15 +221,17 @@ void controllerPseudo(
 
   // // Step 2
   const struct vec z_v = vsub(v, Phi);
-  const struct vec k_hat = mkvec(0.0f, 0.0f, 1.0f);
-  const struct vec a_Phi = vadd4(
-    vscl(GRAVITY_MAGNITUDE, k_hat),
+  struct vec a_Phi = vadd4(
+    vscl(GRAVITY_MAGNITUDE, K_HAT),
     vscl(-k_p, D_C),
     vscl(-k_v, z_v),
     Phi_dot_raw
   );
+  a_Phi.x = constrain(a_Phi.x, -coll_max, coll_max);
+  a_Phi.y = constrain(a_Phi.y, -coll_max, coll_max);
+  a_Phi.z = constrain(a_Phi.z, -coll_max, coll_max);
 
-  const struct vec k_B = qvrot2(k_hat, o);
+  const struct vec k_B = qvrot2(K_HAT, o);
 
   const float T0 = CF_MASS * vdot(a_Phi, k_B);
   // const float T0 = CF_MASS * vmag(a_Phi);
@@ -260,13 +255,13 @@ void controllerPseudo(
   const struct vec phi_rot = qvrot2(phi_L, qinv(o));
   struct vec tmp = vzero();
   if (self->uT == 0.0f) {
-    tmp = vscl(0.0f, vcross(k_hat, phi_rot));
+    tmp = vscl(0.0f, vcross(K_HAT, phi_rot));
   } else {
-    tmp = vscl(CF_MASS/self->uT, vcross(k_hat, phi_rot));
+    tmp = vscl(CF_MASS/self->uT, vcross(K_HAT, phi_rot));
   }
   struct vec phi = vadd(
     tmp,
-    vscl(omega_yaw, k_hat)
+    vscl(omega_yaw, K_HAT)
   );
   const float T1 = CF_MASS * vdot(phi_L, k_B);
   if (use_integrated_thrust == 1) {
@@ -275,7 +270,7 @@ void controllerPseudo(
 
   const float T1_dot = (T1 - self->prev_T1) / dt;
   self->prev_T1 = T1;
-  
+
   // apply the rotation heuristic
   if (phi.x * w.x < 0 && fabsf(w.x) > heuristic_rp) { // desired rotational rate in direction opposite to current rotational rate
     phi.x = omega_rp_max * (w.x < 0 ? -1 : 1); // maximum rotational rate in direction of current rotation
@@ -296,8 +291,8 @@ void controllerPseudo(
   phi.z /= scaling;
 
   const struct vec phi_dot_raw = vscl(1.0f/dt, vsub(phi, self->prev_phi));
-  // self->filt_phi_dot = lpf_vec(self->filt_phi_dot, phi_dot_raw, deriv_alpha);
-  // const struct vec phi_dot = self->filt_phi_dot;
+  self->filt_phi_dot = lpf_vec(self->filt_phi_dot, phi_dot_raw, deriv_alpha);
+  const struct vec phi_dot = self->filt_phi_dot;
   self->prev_phi = phi;
   
   // Step 4
@@ -305,19 +300,14 @@ void controllerPseudo(
   const float z_T = self->uT_dot - T1;
 
   const struct vec coriolis = vcross(w, mvmul(CRAZYFLIE_INERTIA, w));
-  const struct vec pvo_term = vcross(k_hat, qvrot2(z_o, qinv(o)));
+  const struct vec pvo_term = vcross(K_HAT, qvrot2(z_o, qinv(o)));
 
-  struct vec tau_Phi = vadd4(
+  const struct vec tau_Phi = vadd4(
     coriolis,
-    mvmul(CRAZYFLIE_INERTIA, phi_dot_raw),
-    vscl(-k_w, z_w),
+    mvmul(CRAZYFLIE_INERTIA, phi_dot),
+    // vscl(-k_w, z_w),
+    mvmul(CRAZYFLIE_INERTIA, vscl(-k_w, z_w)),
     vscl(-k_pvo*(self->uT/CF_MASS), pvo_term)
-  );
-
-  tau_Phi = vadd(
-    // mvmul(CRAZYFLIE_INERTIA, phi_dot_raw),
-    vzero(),
-    mvmul(CRAZYFLIE_INERTIA, vscl(-k_w, z_w))
   );
 
   const float T2_Phi = T1_dot - k_T*z_T - (k_pvo/CF_MASS)*vdot(z_o, k_B);
