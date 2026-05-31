@@ -47,7 +47,7 @@ static float k_T = 20.00f;
 static float omega_yaw = 0.0f;
 static float sign_direction = 1.0f;
 static float deriv_alpha = 0.01f;
-static uint8_t use_integrated_thrust = 0; // 0: no integration, 1: integrate T1, 2: integrate T2
+static uint8_t use_integrated_thrust = 2; // 0: no integration, 1: integrate T1, 2: integrate T2
 
 static float dbg_uT = 0.0f;
 static float dbg_uT_dot = 0.0f;
