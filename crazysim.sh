@@ -32,6 +32,15 @@ Container lifecycle:
 Simulation and ROS:
   sim-start               Start SITL/Gazebo multi-agent simulator in container
   ros-launch [backend]    Launch Crazyswarm2 server (default backend: cflib)
+  force-controller        Force controller id on one CF
+                          args: [cf_name] [controller_id]
+                          defaults: cf_0 5
+  set-ctrl-param          Set ctrlPseudo firmware parameter on one CF
+                          args: <param> <value> [cf_name]
+                          example: set-ctrl-param k_v 12.0 cf_0
+  bag-record-debug [args] Record rosbag with pose/status and ctrlPseudo debug topics
+                          args: [cf_name] [bag_name]
+                          defaults: cf_0 debug_YYYYmmdd_HHMMSS
   node-launch [args]      Run fixed_setpoint_node
                           args: <cf_name> <x> <y> <z> <yaw> <hold_duration>
                           defaults: cf_0 0.0 0.0 0.5 0.0 -1.0
@@ -51,6 +60,9 @@ Examples:
   ./crazysim.sh up
   ./crazysim.sh sim-start
   ./crazysim.sh ros-launch cflib
+  ./crazysim.sh force-controller cf_0 5
+  ./crazysim.sh set-ctrl-param k_v 12.0 cf_0
+  ./crazysim.sh bag-record-debug cf_0 my_takeoff_test
   ./crazysim.sh node-launch cf_0 0.0 0.0 0.8 0.0 10.0
   ./crazysim.sh build-fw
   ./crazysim.sh build-ws all
@@ -99,6 +111,25 @@ ros_launch() {
     exec_in_container "cd /CrazySim/crazyswarm2_ws && source install/setup.bash && ros2 launch crazyflie launch.py backend:=$backend"
 }
 
+force_controller() {
+  local cf_name="${1:-cf_0}"
+  local controller_id="${2:-5}"
+  exec_in_container "source /CrazySim/crazyswarm2_ws/install/setup.bash && ros2 param set /crazyflie_server ${cf_name}.params.stabilizer.controller ${controller_id}"
+}
+
+set_ctrl_param() {
+  if [[ "$#" -lt 2 ]]; then
+    echo "Usage: ./crazysim.sh set-ctrl-param <param> <value> [cf_name]" >&2
+    return 2
+  fi
+
+  local param="$1"
+  local value="$2"
+  local cf_name="${3:-cf_0}"
+
+  exec_in_container "source /CrazySim/crazyswarm2_ws/install/setup.bash && ros2 param set /crazyflie_server ${cf_name}.params.ctrlPseudo.${param} ${value}"
+}
+
 build_sitl() {
     exec_in_container "cd /CrazySim/crazyflie-firmware/sitl_make/build && cmake .. && make -j $BUILD_JOBS all"
 }
@@ -111,6 +142,19 @@ build_ws() {
       exec_in_container "cd /CrazySim/crazyswarm2_ws && colcon build --symlink-install --packages-select $pkg && source install/setup.bash"
     fi
 }
+
+  bag_record_debug() {
+    cf_name="${1:-cf_0}"
+    bag_name="${2:-debug_$(date +%Y%m%d_%H%M%S)}"
+    bag_root="/CrazySim/app_my_controller/bags"
+    bag_path="$bag_root/$bag_name"
+
+    echo "Recording debug bag for $cf_name"
+    echo "Output: $bag_path"
+    echo "Stop recording with Ctrl+C"
+
+    exec_in_container "mkdir -p $bag_root && source /CrazySim/crazyswarm2_ws/install/setup.bash && ros2 bag record -o $bag_path /$cf_name/pose /$cf_name/status /$cf_name/debug_ctrl_thrust_terms /$cf_name/debug_ctrl_thrust_rate /$cf_name/debug_ctrl_norms"
+  }
 
 cmd="${1:-help}"
 shift || true
@@ -147,6 +191,15 @@ case "$cmd" in
   ros-launch)
     ros_launch "$@"
     ;;
+  force-controller)
+    force_controller "$@"
+    ;;
+  set-ctrl-param)
+    set_ctrl_param "$@"
+    ;;
+  bag-record-debug)
+    bag_record_debug "$@"
+    ;;
   take-off)
     exec_in_container "ros2 service call /all/takeoff crazyflie_interfaces/srv/Takeoff \"{height: 0.5, duration: {sec: 2, nanosec: 0}}\""
     ;;
@@ -160,7 +213,8 @@ case "$cmd" in
     z="${4:-0.5}"
     yaw="${5:-0.0}"
     hold_duration="${6:--1.0}"
-    exec_in_container "source /CrazySim/crazyswarm2_ws/install/setup.bash && ros2 run controller_pkg fixed_setpoint_node --ros-args -p cf_name:=$cf_name -p x:=$x -p y:=$y -p z:=$z -p yaw:=$yaw -p hold_duration:=$hold_duration"
+    # exec_in_container "source /CrazySim/crazyswarm2_ws/install/setup.bash && ros2 run controller_pkg controller_node --ros-args -p cf_name:=$cf_name -p x:=$x -p y:=$y -p z:=$z -p yaw:=$yaw -p hold_duration:=$hold_duration"
+    exec_in_container "source /CrazySim/crazyswarm2_ws/install/setup.bash && ros2 run controller_pkg controller_node"
     ;;
   build-oot)
     exec_in_container "cd /CrazySim/app_my_controller && make PLATFORM=sitl EXTRA_CFLAGS=\"-Wno-error\" -j $BUILD_JOBS"
@@ -181,8 +235,8 @@ case "$cmd" in
     build_ws
     build_sitl
     sim_start_bg
-    echo "Waiting 15s for Gazebo to initialize..."
-    sleep 15
+    echo "Waiting 5s for Gazebo to initialize..."
+    sleep 5
     ros_launch cflib
     ;;
   *)
