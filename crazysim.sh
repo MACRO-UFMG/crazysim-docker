@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 COMPOSE_FILE="${COMPOSE_FILE:-$ROOT_DIR/docker-compose.yaml}"
 SERVICE="${CRAZYSIM_SERVICE:-crazysim}"
-BUILD_JOBS="${BUILD_JOBS:-12}"
+BUILD_JOBS="${BUILD_JOBS:-$(nproc)}"
 USE_NVIDIA="${USE_NVIDIA:-true}"
 
 if [[ "$USE_NVIDIA" == "true" ]]; then
@@ -59,13 +59,13 @@ Environment overrides:
 Examples:
   ./crazysim.sh up
   ./crazysim.sh sim-start
-  ./crazysim.sh ros-launch cflib
-  ./crazysim.sh force-controller cf_0 5
-  ./crazysim.sh set-ctrl-param k_v 12.0 cf_0
-  ./crazysim.sh bag-record-debug cf_0 my_takeoff_test
-  ./crazysim.sh node-launch cf_0 0.0 0.0 0.8 0.0 10.0
   ./crazysim.sh build-fw
-  ./crazysim.sh build-ws all
+  ./crazysim.sh build-ws
+  ./crazysim.sh ros-launch cflib
+  ./crazysim.sh force-controller 5 cf_0
+  ./crazysim.sh set-ctrl-param k_v 12.0 cf_0
+  ./crazysim.sh bag-record-debug my_takeoff_test cf_0
+  ./crazysim.sh node-launch
 EOF
 }
 
@@ -112,8 +112,8 @@ ros_launch() {
 }
 
 force_controller() {
-  local cf_name="${1:-cf_0}"
-  local controller_id="${2:-5}"
+  local controller_id="${1:-5}"
+  local cf_name="${2:-cf_0}"
   exec_in_container "source /CrazySim/crazyswarm2_ws/install/setup.bash && ros2 param set /crazyflie_server ${cf_name}.params.stabilizer.controller ${controller_id}"
 }
 
@@ -143,18 +143,18 @@ build_ws() {
     fi
 }
 
-  bag_record_debug() {
-    cf_name="${1:-cf_0}"
-    bag_name="${2:-debug_$(date +%Y%m%d_%H%M%S)}"
-    bag_root="/CrazySim/app_my_controller/bags"
-    bag_path="$bag_root/$bag_name"
+bag_record_debug() {
+  bag_name="${1:-debug_$(date +%Y%m%d_%H%M%S)}"
+  bag_root="/CrazySim/app_my_controller/bags"
+  bag_path="$bag_root/$bag_name"
+  mkdir -p app_my_controller/bags/$bag_name
 
-    echo "Recording debug bag for $cf_name"
-    echo "Output: $bag_path"
-    echo "Stop recording with Ctrl+C"
+  echo "Recording debug bag"
+  echo "Output: $bag_path"
+  echo "Stop recording with Ctrl+C"
 
-    exec_in_container "mkdir -p $bag_root && source /CrazySim/crazyswarm2_ws/install/setup.bash && ros2 bag record -o $bag_path /$cf_name/pose /$cf_name/status /$cf_name/debug_ctrl_thrust_terms /$cf_name/debug_ctrl_thrust_rate /$cf_name/debug_ctrl_norms"
-  }
+  exec_in_container "source /CrazySim/crazyswarm2_ws/install/setup.bash && ros2 bag record -o $bag_path -a"
+}
 
 cmd="${1:-help}"
 shift || true
@@ -207,12 +207,12 @@ case "$cmd" in
     exec_in_container "ros2 service call /all/land crazyflie_interfaces/srv/Land \"{height: 0.0, duration: {sec: 2, nanosec: 0}}\""
     ;;
   node-launch)
-    cf_name="${1:-cf_0}"
-    x="${2:-0.0}"
-    y="${3:-0.0}"
-    z="${4:-0.5}"
-    yaw="${5:-0.0}"
-    hold_duration="${6:--1.0}"
+    # cf_name="${1:-cf_0}"
+    # x="${2:-0.0}"
+    # y="${3:-0.0}"
+    # z="${4:-0.5}"
+    # yaw="${5:-0.0}"
+    # hold_duration="${6:--1.0}"
     # exec_in_container "source /CrazySim/crazyswarm2_ws/install/setup.bash && ros2 run controller_pkg controller_node --ros-args -p cf_name:=$cf_name -p x:=$x -p y:=$y -p z:=$z -p yaw:=$yaw -p hold_duration:=$hold_duration"
     exec_in_container "source /CrazySim/crazyswarm2_ws/install/setup.bash && ros2 run controller_pkg controller_node"
     ;;
