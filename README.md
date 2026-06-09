@@ -2,7 +2,7 @@
 
 Terminal 1:
 
-`ros2 launch crazyflie launch.py backend:=cflib`
+`ros2 launch crazyflie launch.py backend:=cflib gui:=false`
 
 Terminal 2:
 
